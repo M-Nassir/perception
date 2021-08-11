@@ -1,4 +1,6 @@
-Copyright (c) <year>, <copyright holder>
+BSD 2-Clause License
+
+Copyright (c) <2021>, <Mohammad, Nassir>
 All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
