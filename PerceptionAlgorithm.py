@@ -106,6 +106,7 @@ class Perception:
 
         # holds the train and test distances used as input to the algorithm
         self.distances_train_ = None
+
         self.distances_test_ = None
 
     def fit(self, X):
