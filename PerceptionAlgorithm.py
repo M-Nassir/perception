@@ -6,13 +6,16 @@ import scipy
 from decimal import Decimal
 from math import log, pi
 
+
 class Perception:
 
     """
 
     Perception anomaly detection algorithm.
 
-    Return the anomaly label and associated score of each observation. The greater the score, the more anomalous.
+    Return the anomaly label and associated score of each observation.
+
+    The greater the score, beyond zero, the more anomalous an observation is.
 
     This function specialises to one-dimensional data when the data only has one feature.
 
@@ -20,12 +23,14 @@ class Perception:
 
     (S choose n) * 1/(W^{n-1})
 
-    However, this formula is transformed for computational reasons as detailed in the accompanying paper and code.
+    However, this formula is transformed for computational reasons as detailed in the accompanying paper and code to:
+
+    -1/S * (log(S choose n) - (n - 1) * log(W))
 
     In the multi-dimensional case:
 
        We take in scaled data and calculate each observations' distance from the median using a
-       distance measure, i.e. Mahalanobis or Euclidean. Then, given the one-dimensional data, we apply the
+       distance measure, for example Mahalanobis or Euclidean. Then, given the one-dimensional data, we apply the
        one-dimensional anomaly detection algorithm as before.
 
 
@@ -37,14 +42,14 @@ class Perception:
 
     that the anomalies are both rare and relatively far from the main group;
 
-    that the data values are continuous numbers;
+    that the feature values are numerical;
 
     that input is a numpy array: rows correspond to each observation, and columns correspond to each feature.
 
     that the data has already been normalised to zero mean and standard deviation of 1 for all features.
 
 
-    Parameters (can be left at default values; users need not be concerned about setting them)
+    Parameters (left at default values; users need not be concerned about setting them except in special circumstances)
     ----------
 
     max_decimal_accuracy : int, optional (default=4)
@@ -55,8 +60,6 @@ class Perception:
 
     multi_dim_method : str, optional (default=DfM)
         The multi-dimensional data method to use.
-
-
 
     Attributes
     ----------
@@ -107,75 +110,67 @@ class Perception:
 
     def fit(self, X):
 
-        input_data = None
-
         assert type(X) == np.ndarray, "X must by a numpy array"
         assert X.ndim > 0, "X must have dimension greater than or equal to 1"
 
         if self.multi_dim_method_ == 'DfM':
 
-            # in the case of multidimensional data, transform the data to 1D data
+            # in the case of multidimensional data, transform the data to 1D data,
             if X.ndim > 1:
                 # calculate the multidimensional median
                 self.multi_d_medians_ = np.median(X, axis=0)
                 self.multi_d_medians_ = self.multi_d_medians_.reshape(1, np.size(self.multi_d_medians_))
 
                 # pick the appropriate distance metric.
-                input_data = scipy.spatial.distance.cdist(X,
+                X = scipy.spatial.distance.cdist(X,
                                                  self.multi_d_medians_,
                                                  self.multi_dim_distance_metric_
                                                  ).ravel()
 
-            # round and multiply to achieve the required decimal accuracy
-            if input_data is None:
-                X_r = self._round(X, self.max_decimal_accuracy_)
-            else:
-                X_r = self._round(input_data, self.max_decimal_accuracy_)
+            # get rounding multiplier
+            self.rounding_multiplier_ = self._get_rounding_multiplier(X, self.max_decimal_accuracy_)
+
+            # round and multiply to achieve the required decimal accuracy and integer valued numbers
+            X_g = self._round_scale(X, self.max_decimal_accuracy_, self.rounding_multiplier_)
 
             # find the median of the data (round the median itself in case it is a decimal value)
-            self.training_median_ = np.round(np.median(X_r))
+            self.training_median_ = np.round(np.median(X_g))
 
-            # take absolute values of the points to make them all postiive and the median is now zero
-            X_d = np.abs(X_r - self.training_median_)
+            # take the distance from the median for all points
+            X_f = np.abs(X_g - self.training_median_)
 
             # take the sum of all the indicators
-            self.S_ = X_d.sum()
+            self.S_ = X_f.sum()
 
             # get the length of the number of integers to ascertain how many "windows" we have
-            self.W_ = len(X_d)
+            self.W_ = len(X_f)
 
     def predict(self, X):
-
-        input_data = None
 
         assert type(X) == np.ndarray, "X must by a numpy array"
         assert X.ndim > 0, "X must have dimension greater than or equal to 1"
 
         if self.multi_dim_method_ == 'DfM':
 
+            # keep original X for later
             if X.ndim > 1:
-                input_data = scipy.spatial.distance.cdist(X,
+                X_r = scipy.spatial.distance.cdist(X,
                                                  self.multi_d_medians_,
                                                  self.multi_dim_distance_metric_
                                                  ).ravel()
-
-            # round to integers to achieve the required accuracy using rounding multipler from training stage,
-            # keep original X unchanged
-            if input_data is None:
-                X_r = np.round(X, self.rounding_multiplier_)
             else:
-                X_r = np.round(input_data, self.rounding_multiplier_)
+                X_r = X
 
-            # multiply to obtain integers on same scale as training data
-            X_g = X_r * (10 ** self.rounding_multiplier_)
+            # round and multiply to obtain integers on same scale as training data
+            X_g = self._round_scale(X_r, self.max_decimal_accuracy_, self.rounding_multiplier_)
 
-            X_g = np.abs(X_g - self.training_median_) # self.training_median_ is an integer
+            X_f = np.abs(X_g - self.training_median_) # self.training_median_ is an integer
 
             # vectorise the calculation method to apply it to each integer
             vectorised_f = np.vectorize(self._compute_window_gas)
 
             # apply the function
-            self.scores_ = vectorised_f(X_g)
+            self.scores_ = vectorised_f(X_f)
 
             # label each score > 1 as anomaly, otherwise leave as 0
             self.labels_ = np.where(self.scores_ > 0, 1, 0)
@@ -193,28 +188,35 @@ class Perception:
         self.fit(X)
         self.predict(X)
 
-    # round every number to required decimal accuracy. Then find maximum number of decimals
+    # Round every number to required decimal accuracy. Then find maximum number of decimals
     # in set of numbers (this may be less than the provided decimal accuracy), so that
     # we can multiply every number by correct power to get whole integers.
     # TODO: can this be made more efficient or not required at all?
-    def _round(self, X, accuracy):
+
+    @staticmethod
+    def _get_rounding_multiplier(data, accuracy):
 
         # round to the required accuracy
-        X_rounded = np.round(X, accuracy)
+        data_rounded = np.round(data, accuracy)
 
         # convert all the numbers to string
-        X_rounded_str = X_rounded.astype('str')
+        data_rounded_str = data_rounded.astype('str')
 
         # map each number to decimal to have an iterator
-        X_rounded_dec = map(Decimal, X_rounded_str)
+        data_rounded_dec = map(Decimal, data_rounded_str)
 
         # use list comprehension to get number of exponents in number, and take maximum
-        # this can be a maximum the same as accuracy
+        return max([abs(el.as_tuple().exponent) for el in data_rounded_dec])
 
-        self.rounding_multiplier_ = max([abs(el.as_tuple().exponent) for el in X_rounded_dec])
+    # Multiply every number by the rounding multiplier and take only the integer part for required accuracy
+    @staticmethod
+    def _round_scale(data, accuracy, rounding_multiplier):
+
+        # round to the required accuracy
+        data_rounded = np.round(data, accuracy)
 
         # get rounded raw input as integers
-        vals = X_rounded * (10 ** self.rounding_multiplier_)
+        vals = data_rounded * (10 ** rounding_multiplier)
 
         # return values as integers
         return vals.astype(int)
@@ -239,7 +241,8 @@ class Perception:
                 self._stirling_log_approx(self.S_ - n))
 
     # efficient method to return approximate log(n!)
-    def _stirling_log_approx(self, n):
+    @staticmethod
+    def _stirling_log_approx(n):
         return n * log(n) - n + (0.5 * log(n)) + (0.5 * log(2 * pi))
 
 
