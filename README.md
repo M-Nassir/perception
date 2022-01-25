@@ -1,9 +1,9 @@
-Perception anomaly detection algorithm.
+Perception Anomaly Detection.
 
-This project concerns the prototypical implemenation of the algorithm described in the paper "Anomaly Detection using Principle of Human Perception" 
+This project contains the prototypical implemenation of the algorithm described in the paper "Anomaly Detection using Principle of Human Perception" 
 that can be found at: https://arxiv.org/abs/2103.12323
 
-The perception algorithm detects global anomalies in univariate and multivariate data parameter-free! Just give it the data as a numpy array and it will return
+The perception algorithm detects global anomalies in univariate and multivariate data parameter-free! Just give it the standardised data as a numpy array and it will return
 the label (normal or anomalous) of each observation. The algorithm also gives each observation a score that can be useful for further analysis and investigations.
 
 Notes on the algorithm:

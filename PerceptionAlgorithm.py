@@ -1,4 +1,4 @@
-# Author: Mohammad Nassir <nassir.mohammad@airbus.com>
+# Author: Nassir Mohammad <nassir.mohammad@airbus.com>
 # License: BSD 2 clause
 
 import numpy as np

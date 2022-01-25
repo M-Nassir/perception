@@ -1,0 +1,9 @@
+*.pyc
+*.iml
+*.idea
+*.spyproject
+*.ipynb
+*.vscode
+*.env
+credit-card.csv
+unused/
