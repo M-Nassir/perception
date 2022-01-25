@@ -1,68 +1,116 @@
+# -*- coding: utf-8 -*-
+"""Perception anomaly detection method.
+"""
 # Author: Nassir Mohammad <nassir.mohammad@airbus.com>
 # License: BSD 2 clause
 
 import numpy as np
-import scipy
-from decimal import Decimal
-from math import log, pi
+import math
+from scipy.spatial.distance import cdist
 
 
 class Perception:
 
-    """
+    """Perception anomaly detection method.
 
-    Perception anomaly detection algorithm.
+    ***
 
-    Return the anomaly label and associated score of each observation.
+    Input data must be standardised if multidimensional,
+    using e.g. sklearn.preprocessing.StandardScaler
 
-    The greater the score, beyond zero, the more anomalous an observation is.
+    ***
 
-    This function specialises to one-dimensional data when the data only has one feature.
+    Return the anomaly label of each one-dimensional or
+    multi-dimensional observation.
 
-    The fundamental formula for scoring the unexpectedness of an observation is:
+    For scores, the greater the score, beyond zero, the more anomalous an
+    observation is.
+
+    This function specialises to one-dimensional data when the data only has
+    one feature/column.
+
+    The fundamental formula for scoring the unexpectedness of an observation n
+    is:
 
     (S choose n) * 1/(W^{n-1})
 
-    However, this formula is transformed for computational reasons as detailed in the accompanying paper and code to:
+    However, this formula is transformed for computational reasons as detailed
+    in the accompanying paper and algorithm description to:
 
     -1/S * (log(S choose n) - (n - 1) * log(W))
 
     In the multi-dimensional case:
 
-       We take in scaled data and calculate each observations' distance from the median using a
-       distance measure, for example Mahalanobis or Euclidean. Then, given the one-dimensional data, we apply the
-       one-dimensional anomaly detection algorithm as before.
-
-
+       We take in standardised data and calculate each observations' distance
+       from the median using a distance measure, for example Mahalanobis or
+       Euclidean. Then, given the one-dimensional data, we apply the
+       one-dimensional anomaly detection steps.
 
     Assumptions on data distribution
     --------------------------------
-    The Perception algorithm detects anomalies in one or more dimensions under the assumption that the 'normal' data is
-    found within one majority grouping;
+    The Perception algorithm detects anomalies in one or more dimensions under
+    the assumption that:
 
-    that the anomalies are both rare and relatively far from the main group;
+    'normal' data is found within one majority grouping;
 
-    that the feature values are numerical;
+    the anomalies are both rare and relatively far from the main group;
 
-    that input is a numpy array: rows correspond to each observation, and columns correspond to each feature.
+    the feature values are numerical;
 
-    that the data has already been normalised to zero mean and standard deviation of 1 for all features.
+    the input is a numpy array: rows correspond to each observation, and
+    columns correspond to each feature.
 
+    the data has already been normalised to zero mean and standard
+    deviation of 1 for all features.
 
-    Parameters (left at default values; users need not be concerned about setting them except in special circumstances)
+    Parameters
     ----------
-
     max_decimal_accuracy : int, optional (default=4)
-        The maximum number of decimal places to use for accuracy in single dimensional data.
+        The maximum number of decimal places to use for accuracy at the
+        one dimensional computation steps
 
     multi_dim_distance_metric : str, optional, (default=euclidean)
         The distance metric to use between points in multidimensional space.
+        e.g., 'euclidean', 'Mahalanobis'.
 
     multi_dim_method : str, optional (default=DfM)
-        The multi-dimensional data method to use.
+        The multi-dimensional data method to use. e.g., "DfM", "indpendent".
+        These will be implemented in future.
 
     Attributes
     ----------
+    multi_d_medians_ : numpy array of shape (1, n_dimensions)
+        The mutli-dimensional medians from training data columns,
+        used in predict stage.
+
+    rounding_multiplier_ : integer
+        The value to multiply rounded input by (10 ** rounding_multiplier) to
+        ensure list of numbers are integers on the same scale, used in predict
+        stage.
+
+    training_median_ : integer
+        The 1-dimensional data median obtained from training data,
+        used at predict.
+
+    S_ : integer
+        The total sum of "indicators", i.e. the sum of the input values
+        after integerisation using the rounding_multiplier.
+
+    W_ : integer
+        The number of integers (or Windows or length of input data).
+
+    scores_ : numpy array
+        The anomaly scores of the predicted data. The higher, the more
+        abnormal. Anomalies tend to have higher scores. This value is available
+        once the detector is fitted.
+
+    labels_ : numpy array of either 0 or 1
+        The binary decision labels for each example: 0 normal, 1 anomaly. This
+        is obtained (effectively) parameter free.
+
+    anomalies_ : numpy array
+        The anomalies from the original input data that are detected by the
+        algorithm.
 
     """
 
@@ -71,116 +119,146 @@ class Perception:
                  multi_dim_distance_metric='euclidean',
                  multi_dim_method='DfM'):
 
-        # initialise maximum decimal accuracy of input data
-        self.max_decimal_accuracy_ = max_decimal_accuracy
-
-        # initialise the distance metric to use
-        self.multi_dim_distance_metric_ = multi_dim_distance_metric  # 'euclidean' # euclidean euclidean Mahalanobis
-
-        # initialise the type of multi dimensional anomaly detection algorithm - "DfM", "indpendent"
-        self.multi_dim_method_ = multi_dim_method
-
-        # store the mutli-dimensional medians from training data columns, used for predict
-        self.multi_d_medians_ = None
-
-        # store the median from the training data to be used at predict. For 1D data.
-        self.training_median_ = None
-
-        # value to multiply rounded input by to ensure list of numbers are integers on the same scale
-        self.rounding_multiplier_ = None
-
-        # initialise total sum of indicators S to zero
-        self.S_ = 0
-
-        # initialise the number of integers (or Windows) to zero (length of input)
-        self.W_ = 0
-
-        # create a zero initialised array to hold each example score, any score > 0 is an anomaly
-        self.scores_ = None
-
-        # create holder for labels, 0 normal, 1 anomaly for each example.
-        self.labels_ = None
-
-        # holder for raw anomaly values
-        self.anomalies_ = None
-
-        # holds the train and test distances used as input to the algorithm
-        self.distances_train_ = None
-
-        self.distances_test_ = None
+        self.max_decimal_accuracy = max_decimal_accuracy
+        self.multi_dim_distance_metric = multi_dim_distance_metric
+        self.multi_dim_method = multi_dim_method
 
     def fit(self, X):
+        """
+        Fit detector.
+
+        Parameters
+        ----------
+        X : numpy array of shape (n_samples, n_features)
+            The input samples.
+
+        Returns
+        -------
+        self : object
+            Fitted estimator.
+        """
 
         assert type(X) == np.ndarray, "X must by a numpy array"
         assert X.ndim > 0, "X must have dimension greater than or equal to 1"
 
-        if self.multi_dim_method_ == 'DfM':
+        if self.multi_dim_method == 'DfM':
 
-            # in the case of multidimensional data, transform the data to 1D data,
+            # in the case of multidimensional data, transform data to 1D data
             if X.ndim > 1:
+
                 # calculate the multidimensional median
                 self.multi_d_medians_ = np.median(X, axis=0)
-                self.multi_d_medians_ = self.multi_d_medians_.reshape(1, np.size(self.multi_d_medians_))
+                self.multi_d_medians_ = self.multi_d_medians_.reshape(
+                    1, np.size(self.multi_d_medians_))
 
-                # pick the appropriate distance metric.
-                X = scipy.spatial.distance.cdist(X,
-                                                 self.multi_d_medians_,
-                                                 self.multi_dim_distance_metric_
-                                                 ).ravel()
+                X = cdist(X,
+                          self.multi_d_medians_,
+                          self.multi_dim_distance_metric
+                          ).ravel()
 
-            # get rounding multiplier
-            self.rounding_multiplier_ = self._get_rounding_multiplier(X, self.max_decimal_accuracy_)
+            self.rounding_multiplier_ = self._get_rounding_multiplier(
+                X, self.max_decimal_accuracy)
 
-            # round and multiply to achieve the required decimal accuracy and integer valued numbers
-            X_g = self._round_scale(X, self.max_decimal_accuracy_, self.rounding_multiplier_)
+            # round and multiply to achieve the required decimal accuracy
+            # and integer valued numbers
+            Xg = self._round_scale(
+                X, self.max_decimal_accuracy, self.rounding_multiplier_)
 
-            # find the median of the data (round the median itself in case it is a decimal value)
-            self.training_median_ = np.round(np.median(X_g))
+            # find the median of the data (round the median itself in case
+            # it is not an integer)
+            self.training_median_ = np.round(np.median(Xg))
 
             # take the distance from the median for all points
-            X_f = np.abs(X_g - self.training_median_)
+            Xf = np.abs(Xg - self.training_median_)
 
-            # take the sum of all the indicators
-            self.S_ = X_f.sum()
+            # take the sum of all the "indicators"
+            self.S_ = Xf.sum()
 
-            # get the length of the number of integers to ascertain how many "windows" we have
-            self.W_ = len(X_f)
+            # get the number of "windows" in the one-dimensional data
+            self.W_ = len(Xf)
+
+            return self
 
     def predict(self, X):
+        """
+        Predict if a particular sample is an anomaly or not.
+
+        Parameters
+        ----------
+        X : numpy array of shape (n_samples, n_features).
+
+        Returns
+        -------
+        labels_ : numpy array of shape (n_samples,)
+            The binary decision labels for each example: 0 normal, 1 anomaly.
+        """
 
         assert type(X) == np.ndarray, "X must by a numpy array"
         assert X.ndim > 0, "X must have dimension greater than or equal to 1"
 
-        if self.multi_dim_method_ == 'DfM':
+        logS_ = math.log(self.S_)
+        logW_ = math.log(self.W_)
 
-            # keep original X for later
+        if self.multi_dim_method == 'DfM':
+
+            # keep original X for recovering detected anomalies
             if X.ndim > 1:
-                X_r = scipy.spatial.distance.cdist(X,
-                                                 self.multi_d_medians_,
-                                                 self.multi_dim_distance_metric_
-                                                 ).ravel()
+                Xr = cdist(X,
+                           self.multi_d_medians_,
+                           self.multi_dim_distance_metric
+                           ).ravel()
             else:
-                X_r = X
+                Xr = X
 
-            # round and multiply to obtain integers on same scale as training data
-            X_g = self._round_scale(X_r, self.max_decimal_accuracy_, self.rounding_multiplier_)
+            # round and multiply to get integers on same scale as training data
+            Xg = self._round_scale(
+                Xr, self.max_decimal_accuracy, self.rounding_multiplier_)
 
-            X_f = np.abs(X_g - self.training_median_) # self.training_median_ is an integer
+            # self.training_median_ is an integer
+            Xf = np.abs(Xg - self.training_median_)
 
-            # vectorise the calculation method to apply it to each integer
-            vectorised_f = np.vectorize(self._compute_window_gas)
+            # S choose 0 == 1, S choose S == 1, hence log(1)=0
+            # n>S: function E(C_n) is actually undefined over this range,
+            # but will compute to be anomalous
 
-            # apply the function
-            self.scores_ = vectorised_f(X_f)
+            # using log n! = n*log(n) - n
+            # simplified approx of log (S_C_n) using sterling approx gives:
+            # S*logS - n*logn - (S-n)*log(S-n)
+            with np.errstate(invalid='ignore', divide='ignore'):
+
+                # is n = 0, the approx is 0
+                # if S = n, the approx is 0
+                # if n > S, the approx must be 0 artificially
+
+                # part A
+                SlogS = self.S_*logS_
+
+                # part B
+                logXf = np.where(Xf > 0, np.log(Xf), 0)
+                XflogXf = Xf * logXf
+
+                # part C
+                S_Xf = self.S_ - Xf
+                S_Xf = np.where(S_Xf < 0, 0, S_Xf)
+
+                log_S_Xf = np.where(S_Xf > 0, np.log(S_Xf), 0)
+                S_XflogS_Xf = S_Xf * log_S_Xf
+
+                # A - B - C
+                pre_logS_Choose_Xf = SlogS - XflogXf - S_XflogS_Xf
+
+                # 0 out any values where n>S (i.e. where S_Xf is negative)
+                mask = np.where(S_Xf < 0, 1, 0)
+                logS_Choose_Xf = np.where(mask == 1, 0, pre_logS_Choose_Xf)
+
+            # formula: -1/S * (log(S choose n) - (n - 1) * log(W))
+            self.scores_ = (-1/self.S_)*(logS_Choose_Xf - (Xf-1)*logW_)
 
             # label each score > 1 as anomaly, otherwise leave as 0
             self.labels_ = np.where(self.scores_ > 0, 1, 0)
 
-            # get the anomalies in the original data decimal places (not the rounded data)
+            # get the anomalies form the original data
             self.anomalies_ = np.array(X[np.where(self.labels_ == 1)])
-
-            # sort the anomalies
-            self.anomalies_ = np.sort(self.anomalies_)
 
             return self.labels_
 
@@ -189,61 +267,66 @@ class Perception:
         self.fit(X)
         self.predict(X)
 
-    # Round every number to required decimal accuracy. Then find maximum number of decimals
-    # in set of numbers (this may be less than the provided decimal accuracy), so that
-    # we can multiply every number by correct power to get whole integers.
-    # TODO: can this be made more efficient or not required at all?
-
     @staticmethod
     def _get_rounding_multiplier(data, accuracy):
+        """
+        Find the maximum number of digits after decimal place of rounded
+        input in order to use the value to convert the input data to integers.
 
-        # round to the required accuracy
+        Parameters
+        ----------
+        data : numpy array of shape (n_samples, n_features)
+            The training input data.
+
+        accuracy : integer
+            The desired accuracy to round the data to.
+
+        Returns
+        -------
+        max_exp : integer
+            The maximum number of digits after decimal places over all input
+            data.
+        """
+
         data_rounded = np.round(data, accuracy)
 
-        # convert all the numbers to string
         data_rounded_str = data_rounded.astype('str')
 
-        # map each number to decimal to have an iterator
-        data_rounded_dec = map(Decimal, data_rounded_str)
+        max_exp = np.max([el[::-1].find('.') for el in data_rounded_str])
 
-        # use list comprehension to get number of exponents in number, and take maximum
-        return max([abs(el.as_tuple().exponent) for el in data_rounded_dec])
+        if max_exp == -1:
+            return 0
+        else:
+            return max_exp
 
-    # Multiply every number by the rounding multiplier and take only the integer part for required accuracy
     @staticmethod
     def _round_scale(data, accuracy, rounding_multiplier):
+        """
+        Multiply every input number by the rounding multiplier and take only
+        the integer part for required accuracy.
 
-        # round to the required accuracy
+        Parameters
+        ----------
+        data : numpy array of shape (n_samples, n_features)
+            The training input data.
+
+        accuracy : integer
+            The desired accuracy to round the data to.
+
+        rounding_multiplier : integer
+            The value to multiply rounded input by (10 ** rounding_multiplier)
+            to ensure list of numbers are integers on the same scale, used in
+            predict stage.
+
+        Returns
+        -------
+        integerised_data : numpy array
+            The input data integerised (so that every number is an integer).
+        """
         data_rounded = np.round(data, accuracy)
 
         # get rounded raw input as integers
-        vals = data_rounded * (10 ** rounding_multiplier)
+        integerised_data = data_rounded * (10 ** rounding_multiplier)
+        integerised_data = integerised_data.astype(int)
 
-        # return values as integers
-        return vals.astype(int)
-
-    # calculate the gas value, which is the negative log of Exp_C_w divided by S
-    def _compute_window_gas(self, n):
-
-        value = -1 / self.S_ * (self._log_binomial(n) - (n - 1) * log(self.W_))
-
-        return value
-
-    # calculate and return the log of the binomial coefficient C_S_n
-    def _log_binomial(self, n):
-
-        # S choose 0 == 1, S choose S == 1, hence log(1)
-        # n>S: function E(C_n) is actually undefined over this range, but will compute to be anomalous
-        if n == 0 or n == self.S_ or n > self.S_:
-            return 0
-
-        return (self._stirling_log_approx(self.S_) -
-                self._stirling_log_approx(n) -
-                self._stirling_log_approx(self.S_ - n))
-
-    # efficient method to return approximate log(n!)
-    @staticmethod
-    def _stirling_log_approx(n):
-        return n * log(n) - n + (0.5 * log(n)) + (0.5 * log(2 * pi))
-
-
+        return integerised_data
