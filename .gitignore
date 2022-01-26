@@ -6,3 +6,4 @@
 *.env
 credit-card.csv
 unused/
+*.ipynb_checkpoints
