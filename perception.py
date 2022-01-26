@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Perception anomaly detection method.
 """
-# Author: Nassir Mohammad <nassir.mohammad@airbus.com>
+# Author: Nassir, Mohammad <nassir.mohammad@airbus.com>
 # License: BSD 2 clause
 
 import numpy as np
