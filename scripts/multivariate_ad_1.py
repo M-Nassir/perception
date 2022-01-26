@@ -2,9 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Jan 7 2022
-
-set pwd this script location.
-
 @author: Nassir, Mohammad
 """
 
