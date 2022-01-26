@@ -4,7 +4,7 @@ This project contains the prototypical implemenation of the algorithm described 
 that can be found at: https://arxiv.org/abs/2103.12323
 
 The perception algorithm detects global anomalies in univariate and multivariate data parameter-free! Just give it the standardised data as a numpy array and it will return
-the label (normal or anomalous) of each observation. The algorithm also gives each observation a score that can be useful for further analysis and investigations.
+the label (normal or anomalous) of each observation. The algorithm also gives each observation a score that can be useful for further analysis and investigation.
 
 Notes on the algorithm:
 
