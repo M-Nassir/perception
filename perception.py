@@ -1,6 +1,6 @@
-# -*- coding: utf-8 -*-
 """Perception anomaly detection method.
 """
+# -*- coding: utf-8 -*-
 # Author: Nassir, Mohammad <nassir.mohammad@airbus.com>
 # License: BSD 2 clause
 
@@ -8,17 +8,13 @@ import numpy as np
 import math
 from scipy.spatial.distance import cdist
 
-# TODO: consider incorporating standardisation into algorithm.
-
-
 class Perception:
-
     """Perception anomaly detection method.
 
     ***
 
-    Input data must be standardised if multidimensional,
-    using e.g. sklearn.preprocessing.StandardScaler
+    Input data must be standardised if it is multidimensional,
+    using for example: sklearn.preprocessing.StandardScaler.
 
     ***
 
