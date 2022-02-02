@@ -1,5 +1,4 @@
-"""Perception anomaly detection method.
-"""
+"""Perception anomaly detection method."""
 # -*- coding: utf-8 -*-
 # Author: Nassir, Mohammad <nassir.mohammad@airbus.com>
 # License: BSD 2 clause
@@ -7,6 +6,7 @@
 import numpy as np
 import math
 from scipy.spatial.distance import cdist
+
 
 class Perception:
     """Perception anomaly detection method.
@@ -122,8 +122,7 @@ class Perception:
         self.multi_dim_method = multi_dim_method
 
     def fit(self, X):
-        """
-        Fit detector.
+        """Fit detector.
 
         Parameters
         ----------
@@ -135,7 +134,6 @@ class Perception:
         self : object
             Fitted estimator.
         """
-
         assert type(X) == np.ndarray, "X must by a numpy array"
         assert X.ndim > 0, "X must have dimension greater than or equal to 1"
 
@@ -178,10 +176,8 @@ class Perception:
             return self
 
     def predict(self, X):
-        """
-        Predict if a particular sample is an anomaly or not.
+        """Predict if a particular sample is an anomaly or not.
 
-        Parameters
         ----------
         X : numpy array of shape (n_samples, n_features).
 
@@ -190,7 +186,6 @@ class Perception:
         labels_ : numpy array of shape (n_samples,)
             The binary decision labels for each example: 0 normal, 1 anomaly.
         """
-
         assert type(X) == np.ndarray, "X must by a numpy array"
         assert X.ndim > 0, "X must have dimension greater than or equal to 1"
 
@@ -237,15 +232,13 @@ class Perception:
 
                 # part C
                 S_Xf = self.S_ - Xf
-                S_Xf = np.where(S_Xf < 0, 0, S_Xf)
-
                 log_S_Xf = np.where(S_Xf > 0, np.log(S_Xf), 0)
                 S_XflogS_Xf = S_Xf * log_S_Xf
 
                 # A - B - C
                 pre_logS_Choose_Xf = SlogS - XflogXf - S_XflogS_Xf
 
-                # 0 out any values where n>S (i.e. where S_Xf is negative)
+                # 0 out any values where n>S (i.e. where S_Xf is non-positive)
                 mask = np.where(S_Xf < 0, 1, 0)
                 logS_Choose_Xf = np.where(mask == 1, 0, pre_logS_Choose_Xf)
 
@@ -261,15 +254,24 @@ class Perception:
             return self.labels_
 
     def fit_predict(self, X):
+        """Run fit and predict functions.
 
+        Parameters
+        ----------
+        X : numpy array of shape (n_samples, n_features)
+            The input samples.
+
+        Returns
+        -------
+        labels_ : numpy array of shape (n_samples,)
+            The binary decision labels for each example: 0 normal, 1 anomaly.
+        """
         self.fit(X)
         self.predict(X)
 
     @staticmethod
     def _get_rounding_multiplier(data, accuracy):
-        """
-        Find the maximum number of digits after decimal place of rounded
-        input in order to use the value to convert the input data to integers.
+        """Find max number of digits after decimal place of rounded numbers.
 
         Parameters
         ----------
@@ -285,7 +287,6 @@ class Perception:
             The maximum number of digits after decimal places over all input
             data.
         """
-
         data_rounded = np.round(data, accuracy)
 
         data_rounded_str = data_rounded.astype('str')
@@ -299,9 +300,7 @@ class Perception:
 
     @staticmethod
     def _round_scale(data, accuracy, rounding_multiplier):
-        """
-        Multiply every input number by the rounding multiplier and take only
-        the integer part for required accuracy.
+        """Multiply input numbers by rounding multiplier; take integer part.
 
         Parameters
         ----------
