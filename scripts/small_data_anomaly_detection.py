@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Dec 17 2021
+"""Created on Dec 17 2021.
+
 @author: Nassir, Mohammad
 
 The examples in this script apply the perception anomaly detection algorithm
