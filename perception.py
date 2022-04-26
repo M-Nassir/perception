@@ -37,6 +37,9 @@ class Perception:
 
     -1/S * (log(S choose n) - (n - 1) * log(W))
 
+    In fact the following is currently used in case of division by zero.
+    -1 * (log(S choose n) - (n - 1) * log(W))
+
     In the multi-dimensional case:
 
        We take in standardised data and calculate each observations' distance
@@ -188,8 +191,17 @@ class Perception:
         """
         assert type(X) == np.ndarray, "X must by a numpy array"
         assert X.ndim > 0, "X must have dimension greater than or equal to 1"
+        assert self.S_ >= 0, 'S must be greater than or equal to 0'
+        assert self.W_ > 0,\
+            'W, the number of windows, must be greater than 0'
 
-        logS_ = math.log(self.S_)
+        if self.S_ > 0:
+            logS_ = math.log(self.S_)
+        else:
+            logS_ = 0
+
+        # removed (-1/self.S_) in case of division by zero
+        sigma = -1
         logW_ = math.log(self.W_)
 
         if self.multi_dim_method == 'DfM':
@@ -243,7 +255,8 @@ class Perception:
                 logS_Choose_Xf = np.where(mask == 1, 0, pre_logS_Choose_Xf)
 
             # formula: -1/S * (log(S choose n) - (n - 1) * log(W))
-            self.scores_ = (-1/self.S_)*(logS_Choose_Xf - (Xf-1)*logW_)
+            # removed (-1/self.S_) in case of division by zero
+            self.scores_ = sigma*(logS_Choose_Xf - (Xf-1)*logW_)
 
             # label each score > 1 as anomaly, otherwise leave as 0
             self.labels_ = np.where(self.scores_ > 0, 1, 0)
