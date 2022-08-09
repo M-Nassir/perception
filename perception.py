@@ -138,12 +138,25 @@ class Perception:
             Fitted estimator.
         """
         assert type(X) == np.ndarray, "X must by a numpy array"
-        assert X.ndim > 0, "X must have dimension greater than or equal to 1"
+        assert X.size > 0, "numpy array must be non-empty"
+        assert X.ndim < 3, "array can only be 1 or 2 dimensional"
+
+        # get the dimensionality of the data
+
+        # if dimensionality is 1, X.shape[1] not callable
+        if X.ndim == 1:
+            dimensionality = 1
+        elif X.ndim == 2 and X.shape[1] == 1:
+            # convert the array to 1-dimensional
+            X = np.squeeze(X, axis=1)
+            dimensionality = 1
+        elif X.shape[1] > 1:
+            dimensionality = 2
 
         if self.multi_dim_method == 'DfM':
 
             # in the case of multidimensional data, transform data to 1D data
-            if X.ndim > 1:
+            if dimensionality > 1:
 
                 # calculate the multidimensional median
                 self.multi_d_medians_ = np.median(X, axis=0)
@@ -190,10 +203,24 @@ class Perception:
             The binary decision labels for each example: 0 normal, 1 anomaly.
         """
         assert type(X) == np.ndarray, "X must by a numpy array"
-        assert X.ndim > 0, "X must have dimension greater than or equal to 1"
+        assert X.size > 0, "numpy array must be non-empty"
+
         assert self.S_ >= 0, 'S must be greater than or equal to 0'
-        assert self.W_ > 0,\
-            'W, the number of windows, must be greater than 0'
+        assert self.W_ > 0,'W, number of windows, must be greater than 0'
+
+        assert X.ndim < 3, "array can only be 1 or 2 dimensional"
+
+        # get the dimensionality of the data
+
+        # if dimensionality is 1, X.shape[1] not callable
+        if X.ndim == 1:
+            dimensionality = 1
+        elif X.ndim == 2 and X.shape[1] == 1:
+            # convert the array to 1-dimensional
+            X = np.squeeze(X, axis=1)
+            dimensionality = 1
+        elif X.shape[1] > 1:
+            dimensionality = 2
 
         if self.S_ > 0:
             logS_ = math.log(self.S_)
@@ -207,7 +234,7 @@ class Perception:
         if self.multi_dim_method == 'DfM':
 
             # keep original X for recovering detected anomalies
-            if X.ndim > 1:
+            if dimensionality > 1:
                 Xr = cdist(X,
                            self.multi_d_medians_,
                            self.multi_dim_distance_metric
