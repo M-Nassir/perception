@@ -1,0 +1,14 @@
+include perception.py
+include README.md
+include LICENSE.txt
+include setup.py
+
+# Exclude unnecessary directories and files
+exclude .vscode/*
+exclude .ipynb_checkpoints/*
+exclude .spyproject/*
+exclude Notebooks/*
+exclude scripts/*
+exclude data/*
+exclude .gitignore
+exclude tests.py

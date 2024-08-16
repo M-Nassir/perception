@@ -1,0 +1,12 @@
+LICENSE.txt
+MANIFEST.in
+README.md
+setup.py
+perception_nassir/__init__.py
+perception_nassir/perception.py
+perception_nassir.egg-info/PKG-INFO
+perception_nassir.egg-info/SOURCES.txt
+perception_nassir.egg-info/dependency_links.txt
+perception_nassir.egg-info/requires.txt
+perception_nassir.egg-info/top_level.txt
+tests/tests.py
