@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """Created on Dec 17 2021.
 
-@author: Nassir, Mohammad
+@author: Nassir Mohammad
 
 The examples in this script apply the perception anomaly detection algorithm
 to some synthetic and real small datasets taken from literature on outlier
@@ -16,7 +16,7 @@ from utilities import apply_methods
 import numpy as np
 import pandas as pd
 
-image_save_switch = True
+image_save_switch = False
 image_save_path = ("/Users/nassirmohammad/Google Drive/docs/"
                    "Anomaly_detection_using_principles_of_human_perception/"
                    "figures/")

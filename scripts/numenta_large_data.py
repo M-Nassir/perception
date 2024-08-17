@@ -3,9 +3,9 @@
 """
 Created on Sun Jan 16 00:16:04 2022
 
-@author: Nassir, Mohammad
+@author: Nassir Mohammad
 """
-
+# %% setup
 from utilities import apply_methods
 from utilities import plot_data, show_anomalies
 import matplotlib.dates as mdates

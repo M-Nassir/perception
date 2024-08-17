@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Tue Jan 11 11:50:23 2022
-@author: Nassir, Mohammad
+@author: Nassir Mohammad
 """
 # %% setup
-from perception import Perception
+from perception_nassir import Perception
 from utilities import apply_classifiers, format_df
 from utilities import highlight_max_min
 from rendering_functions import highlight_max, highlight_min

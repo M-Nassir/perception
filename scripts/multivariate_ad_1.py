@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Fri Jan 7 2022
-@author: Nassir, Mohammad
+@author: Nassir Mohammad
 """
 
 # %% setup
@@ -19,7 +19,7 @@ from rendering_functions import highlight_max, highlight_min
 from utilities import show_results
 from utilities import apply_classifiers, format_df
 from utilities import highlight_max_min
-from perception import Perception
+from perception_nassir import Perception
 
 # from pyod.models.auto_encoder import AutoEncoder
 # import dataframe_image as dfi
@@ -216,3 +216,5 @@ highlighted_df.to_latex(
     latex_table_save_path + 'ex8data1_results.txt',
     escape=False,
     index=False)
+
+# %%

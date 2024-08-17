@@ -1,12 +1,12 @@
 '''
-@author: Nassir, Mohammad
+@author: Nassir Mohammad
 '''
 
 from scipy.io import loadmat
 import h5py
 import numpy as np
 from scipy import stats
-from perception import Perception
+from perception_nassir import Perception
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates

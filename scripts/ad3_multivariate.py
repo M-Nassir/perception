@@ -3,7 +3,7 @@
 """
 Created on Thu Jan 13 08:39:20 2022
 
-@author: Nassir, Mohammad
+@author: Nassir Mohammad
 """
 
 # %% imports and setup
@@ -240,3 +240,5 @@ df_precision = get_metrics_save_to_latex(
     metrics_df, pivot_col='Runtime',
     save_path=latex_table_save_path + 'runtime_results.txt',
     round_val=3, col_max=False)
+
+# %%
