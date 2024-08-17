@@ -7,3 +7,5 @@
 credit-card.csv
 unused/
 *.ipynb_checkpoints
+build/lib/perception_nassir/__init__.py
+build/lib/perception_nassir/perception.py
