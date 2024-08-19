@@ -345,6 +345,10 @@ def apply_classifiers(classifiers, dataset_name,
 
         print("total run time: {}".format(total_time))
 
+        predict_labels = predict_labels.flatten()
+        labels = labels.astype(int)
+        predict_labels = predict_labels.astype(int)
+
         # produce the reports
         # -------------------
         cls_report_dic = classification_report(
