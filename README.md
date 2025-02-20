@@ -27,3 +27,18 @@ In the multi-dimensional case:
    one-dimensional anomaly detection algorithm as before.
 
 The 'Notebooks' folder contains a getting started guide and tutorial examples that are recommended to be run and examined if new to this project: https://github.com/M-Nassir/perception 
+
+## Installation:
+
+```pip install perception_nassir```
+
+## Usage:
+
+```
+from perception_nassir import Perception
+data = np.array([2.1, 2.6, 2.4, 2.5, 2.3, 2.1, 2.3, 2.6, 8.2, 8.3])
+clf = Perception()
+clf.fit(data)
+clf.predict(data)
+```
+
