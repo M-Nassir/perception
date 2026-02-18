@@ -4,7 +4,7 @@
 *.spyproject
 *.vscode
 *.env
-credit-card.csv
+creditcard.csv
 unused/
 *.ipynb_checkpoints
 build/lib/perception_nassir/__init__.py
