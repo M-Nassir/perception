@@ -32,10 +32,14 @@ The 'Notebooks' folder contains a getting started guide and tutorial examples th
 
 ```pip install perception_nassir```
 
+## Install all dependencies from the requirements file:
+```pip install -r requirements.txt```
+
 ## Usage:
 
 ```
 from perception_nassir import Perception
+import numpy as np
 data = np.array([2.1, 2.6, 2.4, 2.5, 2.3, 2.1, 2.3, 2.6, 8.2, 8.3])
 clf = Perception()
 clf.fit(data)

@@ -313,7 +313,7 @@ def apply_classifiers(classifiers, dataset_name,
         if ((dataset_name == "http") and (clf_name == "OCSVM")):
             continue  # takes too long to run
 
-        elif (dataset_name == 'credit-card') and\
+        elif (dataset_name == "creditcard") and\
                 (clf_name == "LOF" or
                  clf_name == "KNN" or
                  clf_name == "OCSVM"):

@@ -84,7 +84,7 @@ data_properties_df.to_latex(
 # file_name = "satimage-2.mat"
 # file_name = "http.matv7"
 # file_name = "smtp.matv7"
-# file_name = "credit-card.csv"
+# file_name = "creditcard.csv"
 
 # #########################
 # data sets to explore

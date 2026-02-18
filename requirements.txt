@@ -1,0 +1,12 @@
+## pip install -r requirements.txt
+numpy
+h5py
+seaborn
+scikit-learn
+pyod
+ipykernel
+matplotlib 
+pandas
+jinja2
+dataframe_image
+jupyter
